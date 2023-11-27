@@ -82,9 +82,10 @@ public class PlayerData : ScriptableObject
     //if the player inputs jump early, the game will perform the input once it reaches the ground again
     public float jumpDelayedInput;
 
-    //when inspector updates, this happens https://docs.unity3d.com/ScriptReference/MonoBehaviour.OnValidate.html
+    //when inspector updates, this function happens https://docs.unity3d.com/ScriptReference/MonoBehaviour.OnValidate.html
     private void OnValidate()
     {
+        //calculate the strength of the gravity applied to the player based on how much time is going to be spent in the air
         gravityStrength = -(2 * jumpHeight) / (jumpAirTime * jumpAirTime);
 
         gravityScale = gravityStrength / Vector3.up.y;
