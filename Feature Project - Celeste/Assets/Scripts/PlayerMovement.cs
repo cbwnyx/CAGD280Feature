@@ -7,37 +7,104 @@ using UnityEngine.InputSystem;
 //This script is in charge of the player movement.
 public class PlayerMovement : MonoBehaviour
 {
-    private PlayerInputActions playerActions;
+    //private PlayerInputActions playerActions;
     private Vector2 moveVec = Vector2.zero;
     
     private Rigidbody rb;
 
     public float speed = 4f;
+    public float moveDir;
     public bool playerMoving = false;
 
-    //private Vector2 moveJump = Vector2.zero;
     public bool isGrounded = true;
-    public float jumpForce = 100f;
+    public float jumpForce = 10f;
+    public float gravityScale = 2f;
 
     private void Awake()
     {
-        playerActions = new PlayerInputActions();
+        //playerActions = new PlayerInputActions();
         rb = GetComponent<Rigidbody>();
+    }
+
+    private void Update()
+    {
+        moveDir = Input.GetAxisRaw("Horizontal");
     }
 
     private void FixedUpdate()
     {
         jump();
-        runAcceleration();
+        run();
+        increaseGravity();
     }
 
-    private void OnEnable()
+    private void run()
+    {
+        //causes player to accelerate when initially moving instead of immediately moving at max speed
+        if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow))
+        {
+            if (speed < 6.5f)
+            {
+                speed += 15 * Time.deltaTime;
+            }
+        }
+        
+        else
+        {
+            if (speed > 4f)
+            {
+                speed -= 30 * Time.deltaTime;
+            }
+        }
+
+        ////rb.velocity.y is stated as such because we are not messing with the y value, so it should stay the same
+        rb.velocity = new Vector2(moveDir * speed, rb.velocity.y);
+
+    }
+
+    private void jump()
+    {
+        //float gravity = -9.81f;
+        //use raycasting to determine whether the player is grounded, and can jump
+        RaycastHit hit;
+        Physics.Raycast(transform.position, transform.TransformDirection(Vector3.down), out hit, Mathf.Infinity);
+
+        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.down), out hit, 1.5f))
+        {
+            isGrounded = true;
+        }
+        
+        else
+        {
+            isGrounded = false;
+        }
+        //jumpForce += gravity * Time.deltaTime;
+        //rb.velocity.x is stated as such because we are not messing with the x value, so it should stay the same
+        if (Input.GetKey("space") && isGrounded)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+        }
+
+    }
+
+    private void increaseGravity()
+    {
+        if (Input.GetKey(KeyCode.DownArrow))
+        {
+            rb.AddForce(Physics.gravity * (gravityScale - 1) * (rb.mass * 2));
+        }
+        else
+        {
+            rb.AddForce(Physics.gravity * (gravityScale - 1) * rb.mass);
+        }
+
+    }
+    /*private void OnEnable()
     {
         playerActions.Enable();
         playerActions.PlayerActions.Move.performed += OnMove;
         playerActions.PlayerActions.Move.canceled += OnMoveStop;
 
-        //playerActions.PlayerActions.Jump.performed += OnJump;
     }
     private void OnDisable()
     {
@@ -55,14 +122,9 @@ public class PlayerMovement : MonoBehaviour
     //monitors the player movement when input is stopped
     private void OnMoveStop(InputAction.CallbackContext value)
     {
-        moveVec = Vector2.zero;
+        moveVec = Vector3.zero;
         playerMoving = false;
     }
-
-    /*private void OnJump(InputAction.CallbackContext value)
-    {
-        moveJump = value.ReadValue<Vector2>();
-    }*/
 
     //if speed is less than 6.5, accelerate
     private void runAcceleration()
@@ -81,28 +143,11 @@ public class PlayerMovement : MonoBehaviour
                 speed -= 30 * Time.deltaTime;
             }
         }
-        rb.velocity = moveVec * speed;
-    }
+        //rb.velocity = moveVec * speed;
 
-    private void jump()
-    {
-        //use raycasting to determine whether the player is grounded, and can jump
-        RaycastHit hit;
-        Physics.Raycast(transform.position, transform.TransformDirection(Vector2.down), out hit, Mathf.Infinity);
-        
-        if(Physics.Raycast(transform.position, transform.TransformDirection(Vector2.down), out hit, 1.5f))
-        {
-            isGrounded = true;
-        }
-        else
-        {
-            isGrounded = false;
-        }
-        if (Input.GetKey("space") && isGrounded)
-        {
-            rb.AddForce(Vector2.up * jumpForce);
-        }
-    }
+    }*/
+
+
     //This is the logic i need
     //if the player inputs left or right, they will move in that direction. Done
     //if the player inputs left or right, they will accelerate from immobile to a max speed of, say, 8. Done (max speed 6.5)
