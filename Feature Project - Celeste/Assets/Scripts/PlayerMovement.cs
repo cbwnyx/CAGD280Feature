@@ -8,7 +8,7 @@ using UnityEngine.InputSystem;
 public class PlayerMovement : MonoBehaviour
 {
     //private PlayerInputActions playerActions;
-    private Vector2 moveVec = Vector2.zero;
+    //private Vector2 moveVec = Vector2.zero;
     
     private Rigidbody rb;
 
@@ -19,6 +19,10 @@ public class PlayerMovement : MonoBehaviour
     public bool isGrounded = true;
     public float jumpForce = 10f;
     public float gravityScale = 2f;
+    //public float jumpHeight = 10f;
+    
+    //public float startTime;
+    //public float timeSpacePressed;
 
     private void Awake()
     {
@@ -64,12 +68,12 @@ public class PlayerMovement : MonoBehaviour
 
     private void jump()
     {
-        //float gravity = -9.81f;
+
         //use raycasting to determine whether the player is grounded, and can jump
         RaycastHit hit;
         Physics.Raycast(transform.position, transform.TransformDirection(Vector3.down), out hit, Mathf.Infinity);
 
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.down), out hit, 1.5f))
+        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.down), out hit, 1f))
         {
             isGrounded = true;
         }
@@ -78,11 +82,26 @@ public class PlayerMovement : MonoBehaviour
         {
             isGrounded = false;
         }
-        //jumpForce += gravity * Time.deltaTime;
-        //rb.velocity.x is stated as such because we are not messing with the x value, so it should stay the same
-        if (Input.GetKey("space") && isGrounded)
+
+
+        /*if (Input.GetKeyDown("c"))
         {
+            startTime = Time.deltaTime;
+        }
+        if(Input.GetKeyUp("c") && isGrounded)
+        {
+            timeSpacePressed = Time.deltaTime - startTime;
+            jumpForce = 0;
+            startTime = 0;
+            timeSpacePressed = 0;
+        }*/
+
+        //rb.velocity.x is stated as such because we are not messing with the x value, so it should stay the same
+        if (Input.GetKey("c") && isGrounded)
+        {
+            //jumpForce = jumpHeight * (gravityScale / timeSpacePressed);
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+            
         }
 
     }
@@ -98,6 +117,39 @@ public class PlayerMovement : MonoBehaviour
             rb.AddForce(Physics.gravity * (gravityScale - 1) * rb.mass);
         }
 
+    }
+
+    private void wallGrab()
+    {
+        if (Input.GetKey("z"))
+        {
+            rb.velocity = new Vector2(0,0);
+            Debug.Log("Grabbed Wall");
+        }
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.tag == "Wall")
+        {
+            wallGrab();
+        }
+        
+
+
+        /*if (collision.gameObject.tag == "Wall")
+        {
+            Debug.Log("Touched Wall");
+            if (Input.GetKey("z"))
+            {
+                rb.velocity = new Vector2(0, 0);
+                Debug.Log("Pressed Grab");
+            }
+            else
+            {
+                rb.AddForce(Physics.gravity * (gravityScale - 1) * rb.mass);
+            }
+        }*/
     }
     /*private void OnEnable()
     {
@@ -152,8 +204,8 @@ public class PlayerMovement : MonoBehaviour
     //if the player inputs left or right, they will move in that direction. Done
     //if the player inputs left or right, they will accelerate from immobile to a max speed of, say, 8. Done (max speed 6.5)
     //if the player stops inputting left or right, they will deccelerate from their current speed to 0 quickly, but not instantly. Done
-    //if the player presses jump, they will be able to move vertically. At the peak of their jump their vertical speed will slow to 0 before accelerating back towards the ground. (Partially done--pressing space does move the player vertically, but very slowly in a kind of ascent rather than a jump.)
-    //if the player is not on the ground and has already jumped, they will not be able to jump again.
+    //if the player presses jump, they will be able to move vertically. At the peak of their jump their vertical speed will slow to 0 before accelerating back towards the ground. Done
+    //if the player is not on the ground and has already jumped, they will not be able to jump again. Done (raycasting)
     //if the player presses dash, they will dash in the direction they are "facing". if they are inputting any of the 8 cardinal directions while pressing dash, then they will dash in that direction instead. Prioritize input over no input.
     //if the player is next to a wall, they can grab the wall by holding a button.
 }
