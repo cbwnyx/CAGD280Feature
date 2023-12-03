@@ -14,27 +14,33 @@ public class PlayerMovement : MonoBehaviour
     public float moveDir;
     public bool playerMoving = false;
 
+
     public bool isGrounded = true;
     public float jumpForce = 10f;
     public float gravityScale = 2f;
+    public float maxVerticalForce;
 
     private bool wallSliding = false;
     private float wallSlideSpeed = 2f;
+    public bool touchingWall;
+    public bool climbingWall;
+
+    private bool wallJumping;
+    private float wallJumpDirection;
+    private float wallJumpTime = 0.2f;
+    private float wallJumpCounter;
+    private float wallJumpDuration = 0.4f;
+    private Vector2 wallJumpPower = new Vector2(4f, 8f);
+
 
     private bool canDash = true;
-    private bool isDashing;
-    private float dashingPower = 30f;
+    public bool isDashing;
+    private float dashingPower = 20f;
     private float dashTime = 0.2f;
     private Vector2 dashDir;
     private float dashCooldown = 1f;
 
-    public bool touchingWall;
-
-    //Serialize fields here to be able to reference the wallcheck
-    [SerializeField] private Transform wallCheck;
-    //[SerializeField] private LayerMask wallLayer;
-    public LayerMask wallLayer;
-
+    
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -43,91 +49,75 @@ public class PlayerMovement : MonoBehaviour
     private void Update()
     {
         moveDir = Input.GetAxisRaw("Horizontal");
-
+        wallJumpDirection = -moveDir;
     }
 
     private void FixedUpdate()
     {
         jump();
-        run();
+        //canRun();
+        if (wallJumping == false)
+        {
+            run();
+        }
         increaseGravity();
-        //wallSlide();
-        wallTouch();
+        wallSlide();
         playerDash();
+        wallJump();
     }
 
     private void run()
     {
         //causes player to accelerate when initially moving instead of immediately moving at max speed
         
-        if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow))
+        if (isDashing == false)
         {
-            if (speed < 6.5f)
+            if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow))
             {
-                speed += 15 * Time.deltaTime;
+                if (speed < 6.5f)
+                {
+                    speed += 15 * Time.deltaTime;
+                }
             }
-        }
-        
-        else
-        {
-            if (speed > 4f)
+
+            else
             {
-                speed -= 30 * Time.deltaTime;
+                if (speed > 4f)
+                {
+                    speed -= 30 * Time.deltaTime;
+                }
+
+            }
+            if (touchingWall == false)
+            {
+                rb.velocity = new Vector2(moveDir * speed, rb.velocity.y);
+            }
+            else
+            {
+                if (isGrounded)
+                {
+                    wallJumping = false;
+                    rb.velocity = new Vector2(moveDir * speed, rb.velocity.y);
+                }
             }
         }
 
-        if (touchingWall == false)
-        {
-            rb.velocity = new Vector2(moveDir * speed, rb.velocity.y);
-        }
-        else
-        {
-            if (isGrounded)
-            {
-                touchingWall = false;
-                rb.velocity = new Vector2(moveDir * speed, rb.velocity.y);
-            }
-        }
-        ////rb.velocity.y is stated as such because we are not messing with the y value, so it should stay the same
         
+        //rb.velocity = new Vector2(moveDir * speed, rb.velocity.y);
+        ////rb.velocity.y is stated as such because we are not messing with the y value, so it should stay the same
+
 
     }
 
     private void jump()
     {
 
-        //use raycasting to determine whether the player is grounded, and can jump
-        RaycastHit hit;
-        Physics.Raycast(transform.position, transform.TransformDirection(Vector3.down), out hit, Mathf.Infinity);
-
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.down), out hit, 1f))
-        {
-            isGrounded = true;
-        }
-        
-        else
-        {
-            isGrounded = false;
-        }
-
-
-        /*if (Input.GetKeyDown("c"))
-        {
-            startTime = Time.deltaTime;
-        }
-        if(Input.GetKeyUp("c") && isGrounded)
-        {
-            timeSpacePressed = Time.deltaTime - startTime;
-            jumpForce = 0;
-            startTime = 0;
-            timeSpacePressed = 0;
-        }*/
-
         //rb.velocity.x is stated as such because we are not messing with the x value, so it should stay the same
         if (Input.GetKey("c") && isGrounded)
         {
             //jumpForce = jumpHeight * (gravityScale / timeSpacePressed);
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+            isGrounded = false;
             
         }
 
@@ -146,19 +136,9 @@ public class PlayerMovement : MonoBehaviour
 
     }
 
-    /*private bool touchingWall()
+    private void wallSlide()
     {
-        //this tells us whether the empty game object "WallCheck" is making contact with a wall
-        return Physics2D.OverlapCircle(wallCheck.position, 0.2f, wallLayer);
-        Debug.Log("Touched Wall");
-    }*/
-
-    private void wallTouch()
-    {
-        RaycastHit wallHit;
-        Physics.Raycast(transform.position, transform.TransformDirection(Vector3.right), out wallHit, Mathf.Infinity);
-        Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.right) * wallHit.distance, Color.red);
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.right), out wallHit, 1f))
+        if (touchingWall)
         {
             if (isGrounded == false && moveDir != 0f)
             {
@@ -167,22 +147,52 @@ public class PlayerMovement : MonoBehaviour
                 rb.velocity = new Vector2(rb.velocity.x, Mathf.Clamp(rb.velocity.y, -wallSlideSpeed, float.MaxValue));
             }
         }
+
+        if (Input.GetKey("z") && touchingWall)
+        {
+            climbingWall = true;
+        }
     }
 
-    /*private void wallSlide()
+    private void wallJump()
     {
-        //if the player is touching the wall and is not grounded and there is a directional input, the player will wall slide
-        if (touchingWall() && isGrounded == false && moveDir != 0f)
+        if (wallSliding)
         {
-            wallSliding = true;
-            // Mathf.Clamp keeps the values of the velocity between the given range
-            rb.velocity = new Vector2(rb.velocity.x, Mathf.Clamp(rb.velocity.y, -wallSlideSpeed, float.MaxValue));
+            wallJumping = false;
+            //wallJumpDirection = -moveDir;
+            wallJumpCounter = wallJumpTime;
         }
         else
         {
-            wallSliding = false;
+            //allows player to turn away from the wall, but still have a moment where they can wall jump
+            wallJumpCounter -= Time.deltaTime;
         }
-    }*/
+
+        if (Input.GetKey("c") && wallJumpCounter > 0f && touchingWall)
+        {
+            /*wallJumping = true;
+            rb.velocity = new Vector2(wallJumpDirection * wallJumpPower.x, wallJumpPower.y);
+            wallJumpCounter = 0f;
+            touchingWall = false;*/
+            StartCoroutine(WallJumper());
+        }
+
+    }
+
+    private IEnumerator WallJumper()
+    {
+        //cant run
+        // perform jump
+        //can run again
+        wallJumping = true;
+        touchingWall = false;
+
+        rb.velocity = new Vector2(wallJumpDirection * wallJumpPower.x, wallJumpPower.y);
+        yield return new WaitForSeconds(wallJumpDuration);
+        wallJumping = false;
+        wallJumpCounter = 0f;
+        
+    }
 
     private void playerDash()
     {
@@ -205,6 +215,11 @@ public class PlayerMovement : MonoBehaviour
         }
         rb.velocity = dashDir.normalized * dashingPower;
         yield return new WaitForSeconds(dashTime);
+        if (rb.velocity.y > 6.5f)
+        {
+            maxVerticalForce = 6.5f;
+            rb.velocity = new Vector2(rb.velocity.x, maxVerticalForce);
+        }
         gravityScale = originalGravity;
         isDashing = false;
         yield return new WaitForSeconds(dashCooldown);
@@ -212,19 +227,38 @@ public class PlayerMovement : MonoBehaviour
 
     }
 
+    
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.tag == "Wall")
         {
             touchingWall = true;
         }
+        if (collision.gameObject.tag == "Floor")
+        {
+            isGrounded = true;
+            touchingWall = false;
+        }
     }
+
+    /*private void canRun()
+    {
+        if (wallJumping == false || climbingWall == false)
+        {
+            run();
+        }
+    }*/
+    // if wall jumping is true, running is false
+    // if wall climbing is true, running is false
+
+
     //This is the logic i need
     //if the player inputs left or right, they will move in that direction. Done
     //if the player inputs left or right, they will accelerate from immobile to a max speed of, say, 8. Done (max speed 6.5)
     //if the player stops inputting left or right, they will deccelerate from their current speed to 0 quickly, but not instantly. Done
     //if the player presses jump, they will be able to move vertically. At the peak of their jump their vertical speed will slow to 0 before accelerating back towards the ground. Done
-    //if the player is not on the ground and has already jumped, they will not be able to jump again. Done (raycasting)
-    //if the player presses dash, they will dash in the direction they are "facing". if they are inputting any of the 8 cardinal directions while pressing dash, then they will dash in that direction instead. Prioritize input over no input.
-    //if the player is next to a wall, they can grab the wall by holding a button.
+    //if the player is not on the ground and has already jumped, they will not be able to jump again. Done (was raycasting, now just using collision)
+    //if the player presses dash, they will dash in the direction they are "facing". if they are inputting any of the 8 cardinal directions while pressing dash, then they will dash in that direction instead. Prioritize input over no input. Done
+    //if the player is next to a wall, they can grab the wall by holding a button. Wallslide Done
+    //Dash Issue: The player has a movement speed limit. This is to handle acceleration, but if the player dashes with any horizontal input, it makes the dash very short and not very fast. On the contrary, if the player dashes vertically, they will go very far and fast due to the lack of speed limit. Fixed
 }
