@@ -1353,6 +1353,7 @@ MonoBehaviour:
   speed: 4
   moveDir: 0
   playerMoving: 0
+  isMovingRight: 0
   isGrounded: 1
   jumpForce: 10
   gravityScale: 2
