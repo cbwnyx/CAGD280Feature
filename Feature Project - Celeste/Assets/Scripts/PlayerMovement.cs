@@ -13,7 +13,7 @@ public class PlayerMovement : MonoBehaviour
     public float speed = 4f;
     public float moveDir;
     public bool playerMoving = false;
-
+    public bool isMovingRight;
 
     public bool isGrounded = true;
     public float jumpForce = 10f;
@@ -29,17 +29,14 @@ public class PlayerMovement : MonoBehaviour
     private float wallJumpDirection;
     private float wallJumpTime = 0.2f;
     private float wallJumpCounter;
-    private float wallJumpDuration = 0.4f;
-    private Vector2 wallJumpPower = new Vector2(4f, 8f);
-
+    private float wallJumpDuration = 1f;
+    private Vector2 wallJumpPower = new Vector2(12f, 8f);
 
     private bool canDash = true;
     public bool isDashing;
     private float dashingPower = 20f;
     private float dashTime = 0.2f;
     private Vector2 dashDir;
-    private float dashCooldown = 1f;
-
     
     private void Awake()
     {
@@ -50,6 +47,15 @@ public class PlayerMovement : MonoBehaviour
     {
         moveDir = Input.GetAxisRaw("Horizontal");
         wallJumpDirection = -moveDir;
+
+        if (canDash == false)
+        {
+            gameObject.GetComponent<Renderer>().material.color = new Color(0.4f, 0.9f, 0.9f, 1f);
+        }
+        else
+        {
+            gameObject.GetComponent<Renderer>().material.color = new Color(0.4f, 0f, 0f, 1f);
+        }
     }
 
     private void FixedUpdate()
@@ -88,6 +94,16 @@ public class PlayerMovement : MonoBehaviour
                 }
 
             }
+
+            if (Input.GetKey(KeyCode.RightArrow))
+            {
+                isMovingRight = true;
+            }
+            // HERE IS WHERE I LEFT OFF
+            //Logic--if the player is moving in a direction, create a way to observe that the direction is changed.
+            //if it is observed that the direction is changed, the player slows down before accelerating in the other direction.
+
+
             if (touchingWall == false)
             {
                 rb.velocity = new Vector2(moveDir * speed, rb.velocity.y);
@@ -100,6 +116,7 @@ public class PlayerMovement : MonoBehaviour
                     rb.velocity = new Vector2(moveDir * speed, rb.velocity.y);
                 }
             }
+
         }
 
         
@@ -127,10 +144,12 @@ public class PlayerMovement : MonoBehaviour
     {
         if (Input.GetKey(KeyCode.DownArrow))
         {
-            rb.AddForce(Physics.gravity * (gravityScale - 1) * (rb.mass * 2));
+            gravityScale = 3f;
+            rb.AddForce(Physics.gravity * (gravityScale - 1) * rb.mass);
         }
         else
         {
+            gravityScale = 2f;
             rb.AddForce(Physics.gravity * (gravityScale - 1) * rb.mass);
         }
 
@@ -165,6 +184,7 @@ public class PlayerMovement : MonoBehaviour
         else
         {
             //allows player to turn away from the wall, but still have a moment where they can wall jump
+            touchingWall = false;
             wallJumpCounter -= Time.deltaTime;
         }
 
@@ -205,7 +225,7 @@ public class PlayerMovement : MonoBehaviour
     {
         canDash = false;
         isDashing = true;
-        float originalGravity = gravityScale;
+        //float originalGravity = gravityScale;
         gravityScale = 0f;
 
         dashDir = new Vector2(moveDir, Input.GetAxisRaw("Vertical"));
@@ -220,27 +240,34 @@ public class PlayerMovement : MonoBehaviour
             maxVerticalForce = 6.5f;
             rb.velocity = new Vector2(rb.velocity.x, maxVerticalForce);
         }
-        gravityScale = originalGravity;
+        gravityScale = 2f;
         isDashing = false;
-        yield return new WaitForSeconds(dashCooldown);
-        canDash = true;
+
 
     }
 
     
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.tag == "Wall")
+        /*if (collision.gameObject.tag == "Wall")
         {
             touchingWall = true;
-        }
+        }*/
         if (collision.gameObject.tag == "Floor")
         {
             isGrounded = true;
+            canDash = true;
             touchingWall = false;
         }
     }
 
+    private void OnCollisionStay(Collision collision)
+    {
+        if (collision.gameObject.tag == "Wall")
+        {
+            touchingWall = true;
+        }
+    }
     /*private void canRun()
     {
         if (wallJumping == false || climbingWall == false)
