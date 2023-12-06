@@ -19,7 +19,7 @@ public class PlayerMovement : MonoBehaviour
     [Header("Jump Variables")]
     public bool isGrounded = true;
     private float jumpForce = 10f;
-    public float gravityScale = 2f;
+    public float gravityScale = 2.5f;
     private float maxVerticalForce;
 
     [Header("Wall Climb and Slide Variables")]
@@ -96,7 +96,7 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            gravityScale = 2f;
+            gravityScale = 2.5f;
             rb.AddForce(Physics.gravity * (gravityScale - 1) * rb.mass);
         }
 

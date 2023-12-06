@@ -6,8 +6,8 @@ using UnityEngine;
 //This script adjusts the gravity so that the jump feels more comfortable and less floaty.
 public class PlayerJumpAdjustments : MonoBehaviour
 {
-    public float gravityMultiplier = 3f;
-    public float hopMultiplier = 2.5f;
+    public float gravityMultiplier = 6f;
+    public float hopMultiplier = 5f;
 
     Rigidbody rb;
 
